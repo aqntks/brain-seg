@@ -1,0 +1,6 @@
+torch
+numpy
+pandas
+nibabel
+matplotlib
+opencv-python
