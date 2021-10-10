@@ -39,6 +39,7 @@ import torch
 import data_loader
 from utils import visualize
 
+from segmentation import segmentation
 
 def brain(custom):
     if custom:
@@ -225,6 +226,8 @@ def brain(custom):
     plt.xlabel("epoch")
     plt.plot(x, y, color="purple")
     plt.show()
+
+    segmentation()
 
 
 if __name__ == '__main__':
