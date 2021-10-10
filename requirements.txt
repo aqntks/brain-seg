@@ -5,3 +5,4 @@ nibabel
 matplotlib
 opencv-python
 monai
+tqdm

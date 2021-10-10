@@ -85,7 +85,6 @@ def brats_brain(root_dir):
         ]
     )
 
-
     train_ds = DecathlonDataset(
         root_dir=root_dir,
         task="Task01_BrainTumour",
@@ -106,3 +105,5 @@ def brats_brain(root_dir):
         num_workers=4,
     )
     val_loader = DataLoader(val_ds, batch_size=1, shuffle=False, num_workers=4)
+
+    return train_loader, val_loader

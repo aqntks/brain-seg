@@ -3,7 +3,7 @@ import pandas as pd
 import nibabel as nib
 import os
 import cv2
-
+import data_loader
 
 from util import *
 import matplotlib.pyplot as plt
@@ -69,6 +69,8 @@ def brain(DATA_DIR):
 
 if __name__ == '__main__':
     DATA_DIR = '../BrainTumour/'
-    brain(DATA_DIR)
+    # brain(DATA_DIR)
+
+    data_loader.brats_brain('data')
 
 
