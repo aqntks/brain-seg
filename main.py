@@ -4,6 +4,7 @@ import nibabel as nib
 import os
 import cv2
 
+
 from util import *
 import matplotlib.pyplot as plt
 
@@ -25,6 +26,30 @@ def visual(data):
     plt.show()
 
 
+def visual2(data):
+    # 임의의 레이어 번호를 지정합니다.
+    maxval = 154  # including depth
+    i = np.random.randint(0, maxval)
+
+    # 확인할 채널을 지정합니다.
+    channel = 0
+
+    print(f'Plotting layer Layer {i}, Channel {channel} of Image')
+    plt.imshow(data[:, :, i, channel], cmap='gray')
+    plt.axis('off')
+    plt.show()
+
+
+def explore_3d_image(layer):
+    plt.figure(figsize=(10,5))
+    channel = 1
+    plt.imshow(image_data[:,:,layer,channel],cmap='gray')
+    plt.title('Explore Layers of MRI', family = 'Arial', fontsize=18)
+    plt.axis('off')
+    plt.show()
+    return layer
+
+
 def load_case(image_nifty_file, label_nifty_file):
     image = np.array(nib.load(image_nifty_file).get_fdata())
     label = np.array(nib.load(label_nifty_file).get_fdata())
@@ -39,13 +64,7 @@ def brain(DATA_DIR):
     img_data = img.get_fdata()
 
     print(img_data.shape)
-    visual(img_data)
-
-# slice_0 = image[26, :, :, 0]
-    # slice_1 = image[:, 30, :, 0]
-    # slice_2 = image[:, :, 16, 0]
-    # show_slices([slice_0, slice_1, slice_2])
-    # plt.suptitle("Center slices for EPI image")
+    # visual2(img_data)
 
 
 if __name__ == '__main__':
