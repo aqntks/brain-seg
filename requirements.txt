@@ -1,8 +1,7 @@
-torch
-numpy
+torch>=1.5
+numpy>=1.17
 pandas
 nibabel
 matplotlib
-opencv-python
 monai
-tqdm
+tqdm>=4.47.0

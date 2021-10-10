@@ -106,4 +106,4 @@ def brats_brain(root_dir):
     )
     val_loader = DataLoader(val_ds, batch_size=1, shuffle=False, num_workers=4)
 
-    return train_loader, val_loader
+    return train_ds, val_ds, train_loader, val_loader
