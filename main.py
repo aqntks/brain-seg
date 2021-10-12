@@ -7,7 +7,7 @@ import numpy as np
 from monai.apps import DecathlonDataset
 from monai.config import print_config
 from monai.data import DataLoader, decollate_batch
-from monai.handlers.utils import from_engine
+# from monai.handlers.utils import from_engine
 from monai.losses import DiceLoss
 from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric
@@ -39,7 +39,9 @@ import torch
 import data_loader
 from utils import visualize
 
-from segmentation import segmentation
+# from segmentation import segmentation
+from unet3d import UNet3d
+
 
 def brain(custom):
     if custom:
@@ -55,7 +57,7 @@ def brain(custom):
     VAL_AMP = True
 
     # standard PyTorch program style: create SegResNet, DiceLoss and Adam optimizer
-    device = torch.device("cuda:0")
+    device = torch.device("cpu")
     model = SegResNet(
         blocks_down=[1, 2, 2, 4],
         blocks_up=[1, 1, 1],
@@ -64,6 +66,8 @@ def brain(custom):
         out_channels=3,
         dropout_prob=0.2,
     ).to(device)
+
+    # model = UNet3d(in_channels=4, out_channels=3).to(device)
 
     loss_function = DiceLoss(smooth_nr=0, smooth_dr=1e-5, squared_pred=True, to_onehot_y=False, sigmoid=True)
     optimizer = torch.optim.Adam(model.parameters(), 1e-4, weight_decay=1e-5)
@@ -227,7 +231,7 @@ def brain(custom):
     plt.plot(x, y, color="purple")
     plt.show()
 
-    segmentation()
+    # segmentation()
 
 
 if __name__ == '__main__':
