@@ -1,50 +1,61 @@
 import os
-import shutil
-import tempfile
-import time
+import torch
+
 import matplotlib.pyplot as plt
-import numpy as np
-from monai.apps import DecathlonDataset
-from monai.config import print_config
-from monai.data import DataLoader, decollate_batch
-from monai.handlers.utils import from_engine
-from monai.losses import DiceLoss
 from monai.inferers import sliding_window_inference
-from monai.metrics import DiceMetric
 from monai.networks.nets import SegResNet
 from monai.transforms import (
     Activations,
-    Activationsd,
     AsDiscrete,
-    AsDiscreted,
     Compose,
-    Invertd,
-    LoadImaged,
-    MapTransform,
-    NormalizeIntensityd,
-    Orientationd,
-    RandFlipd,
-    RandScaleIntensityd,
-    RandShiftIntensityd,
-    RandSpatialCropd,
-    Spacingd,
-    EnsureChannelFirstd,
-    EnsureTyped,
     EnsureType,
 )
-from monai.utils import set_determinism
 
-import torch
-
-from data_loader import ConvertToMultiChannelBasedOnBratsClassesd
+from data_loader import brats_brain_val
 
 
-def segmentation(model, device, val_ds, inference, post_trans, dice_metric, dice_metric_batch, metric_batch, metric):
+def segmentation():
     # Check best model output with the input image and label ##################################################
+    VAL_AMP = True
+
+    val_ds, val_loader = brats_brain_val('data/')
+
+    device = torch.device("cpu")
+    model = SegResNet(
+        blocks_down=[1, 2, 2, 4],
+        blocks_up=[1, 1, 1],
+        init_filters=16,
+        in_channels=4,
+        out_channels=3,
+        dropout_prob=0.2,
+    ).to(device)
+
     model.load_state_dict(
-        torch.load(os.path.join('weights/', "best_metric_model.pth"))
+        torch.load(os.path.join('weights/', "SegResNet_sample.pth"), map_location=device)
     )
     model.eval()
+
+    post_trans = Compose(
+        [EnsureType(), Activations(sigmoid=True), AsDiscrete(threshold_values=True)]
+    )
+
+    def inference(input):
+
+        def _compute(input):
+            return sliding_window_inference(
+                inputs=input,
+                roi_size=(240, 240, 160),
+                sw_batch_size=1,
+                predictor=model,
+                overlap=0.5,
+            )
+
+        if VAL_AMP:
+            with torch.cuda.amp.autocast():
+                return _compute(input)
+        else:
+            return _compute(input)
+
     with torch.no_grad():
         # select one image to evaluate and visualize the model output
         val_input = val_ds[6]["image"].unsqueeze(0).to(device)
@@ -72,74 +83,6 @@ def segmentation(model, device, val_ds, inference, post_trans, dice_metric, dice
             plt.title(f"output channel {i}")
             plt.imshow(val_output[i, :, :, 70].detach().cpu())
         plt.show()
-
-
-    # Evaluation on original image spacings ####################################################
-    val_org_transforms = Compose(
-        [
-            LoadImaged(keys=["image", "label"]),
-            EnsureChannelFirstd(keys=["image"]),
-            ConvertToMultiChannelBasedOnBratsClassesd(keys="label"),
-            Spacingd(keys=["image"], pixdim=(1.0, 1.0, 1.0), mode="bilinear"),
-            Orientationd(keys=["image"], axcodes="RAS"),
-            NormalizeIntensityd(keys="image", nonzero=True, channel_wise=True),
-            EnsureTyped(keys=["image", "label"]),
-        ]
-    )
-
-    val_org_ds = DecathlonDataset(
-        root_dir='data/',
-        task="Task01_BrainTumour",
-        transform=val_org_transforms,
-        section="validation",
-        download=False,
-        num_workers=4,
-        cache_num=0,
-    )
-    val_org_loader = DataLoader(val_org_ds, batch_size=1, shuffle=False, num_workers=4)
-
-    post_transforms = Compose([
-        EnsureTyped(keys="pred"),
-        Invertd(
-            keys="pred",
-            transform=val_org_transforms,
-            orig_keys="image",
-            meta_keys="pred_meta_dict",
-            orig_meta_keys="image_meta_dict",
-            meta_key_postfix="meta_dict",
-            nearest_interp=False,
-            to_tensor=True,
-        ),
-        Activationsd(keys="pred", sigmoid=True),
-        AsDiscreted(keys="pred", threshold_values=True),
-    ])
-
-    # #############################################################################################
-    model.load_state_dict(torch.load(
-        os.path.join('weights/', "best_metric_model.pth")))
-    model.eval()
-
-    with torch.no_grad():
-        for val_data in val_org_loader:
-            val_inputs = val_data["image"].to(device)
-            val_data["pred"] = inference(val_inputs)
-            val_data = [post_transforms(i) for i in decollate_batch(val_data)]
-            val_outputs, val_labels = from_engine(["pred", "label"])(val_data)
-            dice_metric(y_pred=val_outputs, y=val_labels)
-            dice_metric_batch(y_pred=val_outputs, y=val_labels)
-
-        metric_org = dice_metric.aggregate().item()
-        metric_batch_org = dice_metric_batch.aggregate()
-
-        dice_metric.reset()
-        dice_metric_batch.reset()
-
-    metric_tc, metric_wt, metric_et = metric_batch[0].item(), metric_batch[1].item(), metric_batch[2].item()
-
-    print("Metric on original image spacing: ", metric)
-    print(f"metric_tc: {metric_tc:.4f}")
-    print(f"metric_wt: {metric_wt:.4f}")
-    print(f"metric_et: {metric_et:.4f}")
 
 
 if __name__ == '__main__':
