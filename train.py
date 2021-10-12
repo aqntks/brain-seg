@@ -1,55 +1,27 @@
 import os
-import shutil
-import tempfile
 import time
-import matplotlib.pyplot as plt
-import numpy as np
-from monai.apps import DecathlonDataset
-from monai.config import print_config
-from monai.data import DataLoader, decollate_batch
-# from monai.handlers.utils import from_engine
+import torch
+
+from monai.data import decollate_batch
 from monai.losses import DiceLoss
 from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric
 from monai.networks.nets import SegResNet
 from monai.transforms import (
     Activations,
-    Activationsd,
     AsDiscrete,
-    AsDiscreted,
     Compose,
-    Invertd,
-    LoadImaged,
-    MapTransform,
-    NormalizeIntensityd,
-    Orientationd,
-    RandFlipd,
-    RandScaleIntensityd,
-    RandShiftIntensityd,
-    RandSpatialCropd,
-    Spacingd,
-    EnsureChannelFirstd,
-    EnsureTyped,
     EnsureType,
 )
-from monai.utils import set_determinism
-
-import torch
 
 import data_loader
-from utils import visualize
-
-# from segmentation import segmentation
-from unet3d import UNet3d
+from utils import pre_visualize, train_graph
 
 
-def brain(custom):
-    if custom:
-        pass
-    else:
-        train_ds, val_ds, train_loader, val_loader = data_loader.brats_brain('data/')
+def train():
+    train_ds, val_ds, train_loader, val_loader = data_loader.brats_brain('data/')
 
-    visualize(val_ds)
+    pre_visualize(val_ds)
 
     # 모델, 옵티마이저, 로스함수 생성 #################################################################
     max_epochs = 300
@@ -57,7 +29,7 @@ def brain(custom):
     VAL_AMP = True
 
     # standard PyTorch program style: create SegResNet, DiceLoss and Adam optimizer
-    device = torch.device("cpu")
+    device = torch.device("cuda:0")
     model = SegResNet(
         blocks_down=[1, 2, 2, 4],
         blocks_up=[1, 1, 1],
@@ -194,49 +166,10 @@ def brain(custom):
 
     print(f"train completed, best_metric: {best_metric:.4f} at epoch: {best_metric_epoch}, total time: {total_time}.")
 
-    # Plot the loss and metric ##########################################################################
-    plt.figure("train", (12, 6))
-    plt.subplot(1, 2, 1)
-    plt.title("Epoch Average Loss")
-    x = [i + 1 for i in range(len(epoch_loss_values))]
-    y = epoch_loss_values
-    plt.xlabel("epoch")
-    plt.plot(x, y, color="red")
-    plt.subplot(1, 2, 2)
-    plt.title("Val Mean Dice")
-    x = [val_interval * (i + 1) for i in range(len(metric_values))]
-    y = metric_values
-    plt.xlabel("epoch")
-    plt.plot(x, y, color="green")
-    plt.show()
-
-    plt.figure("train", (18, 6))
-    plt.subplot(1, 3, 1)
-    plt.title("Val Mean Dice TC")
-    x = [val_interval * (i + 1) for i in range(len(metric_values_tc))]
-    y = metric_values_tc
-    plt.xlabel("epoch")
-    plt.plot(x, y, color="blue")
-    plt.subplot(1, 3, 2)
-    plt.title("Val Mean Dice WT")
-    x = [val_interval * (i + 1) for i in range(len(metric_values_wt))]
-    y = metric_values_wt
-    plt.xlabel("epoch")
-    plt.plot(x, y, color="brown")
-    plt.subplot(1, 3, 3)
-    plt.title("Val Mean Dice ET")
-    x = [val_interval * (i + 1) for i in range(len(metric_values_et))]
-    y = metric_values_et
-    plt.xlabel("epoch")
-    plt.plot(x, y, color="purple")
-    plt.show()
-
-    # segmentation()
+    train_graph(epoch_loss_values, val_interval, metric_values, metric_values_tc, metric_values_wt, metric_values_et)
 
 
 if __name__ == '__main__':
-    custom = False
-
-    brain(custom)
+    train()
 
 

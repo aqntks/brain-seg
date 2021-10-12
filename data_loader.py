@@ -107,3 +107,34 @@ def brats_brain(root_dir):
     val_loader = DataLoader(val_ds, batch_size=1, shuffle=False, num_workers=4)
 
     return train_ds, val_ds, train_loader, val_loader
+
+
+def brats_brain_val(root_dir):
+    val_transform = Compose(
+        [
+            LoadImaged(keys=["image", "label"]),
+            EnsureChannelFirstd(keys="image"),
+            ConvertToMultiChannelBasedOnBratsClassesd(keys="label"),
+            Spacingd(
+                keys=["image", "label"],
+                pixdim=(1.0, 1.0, 1.0),
+                mode=("bilinear", "nearest"),
+            ),
+            Orientationd(keys=["image", "label"], axcodes="RAS"),
+            NormalizeIntensityd(keys="image", nonzero=True, channel_wise=True),
+            EnsureTyped(keys=["image", "label"]),
+        ]
+    )
+
+    val_ds = DecathlonDataset(
+        root_dir=root_dir,
+        task="Task01_BrainTumour",
+        transform=val_transform,
+        section="validation",
+        download=False,
+        cache_rate=0.0,
+        num_workers=4,
+    )
+    val_loader = DataLoader(val_ds, batch_size=1, shuffle=False, num_workers=4)
+
+    return val_ds, val_loader
