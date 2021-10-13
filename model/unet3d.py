@@ -9,27 +9,27 @@ class UNet3d(nn.Module):
         super(UNet3d, self).__init__()
 
         features = init_features
-        self.encoder1 = UNet3d._block(in_channels, features, name="enc1")
+        self.encoder1 = UNet3d._block(in_channels, features, name="enc1")  # 1/32/32
         self.pool1 = nn.MaxPool3d((2, 2, 2))
-        self.encoder2 = UNet3d._block(features, features * 2, name="enc2")
+        self.encoder2 = UNet3d._block(features, features * 2, name="enc2")  # 32/64/64
         self.pool2 = nn.MaxPool3d((2, 2, 2))
-        self.encoder3 = UNet3d._block(features * 2, features * 4, name="enc3")
+        self.encoder3 = UNet3d._block(features * 2, features * 4, name="enc3")  # 64/128/128
         self.pool3 = nn.MaxPool3d((2, 2, 2))
-        self.encoder4 = UNet3d._block(features * 4, features * 8, name="enc4")
+        self.encoder4 = UNet3d._block(features * 4, features * 8, name="enc4")  # 128/256/256
         self.pool4 = nn.MaxPool3d((2, 2, 2))
 
-        self.bottleneck = UNet3d._block(features * 8, features * 16, name="bottleneck")
+        self.bottleneck = UNet3d._block(features * 8, features * 16, name="bottleneck")  # 256/512/512
 
-        self.upconv4 = nn.ConvTranspose3d(features * 16, features * 8, kernel_size=2, stride=(2, 2, 2), bias=True)
+        self.upconv4 = nn.ConvTranspose3d(features * 16, features * 8, kernel_size=(2, 2, 2), stride=(2, 2, 2), bias=True)
         self.decoder4 = UNet3d._block((features * 8) * 2, features * 8, name="dec4")
-        self.upconv3 = nn.ConvTranspose3d(features * 8, features * 4, kernel_size=2, stride=(2, 2, 2), bias=True)
+        self.upconv3 = nn.ConvTranspose3d(features * 8, features * 4, kernel_size=(2, 2, 2), stride=(2, 2, 2), bias=True)
         self.decoder3 = UNet3d._block((features * 4) * 2, features * 4, name="dec3")
-        self.upconv2 = nn.ConvTranspose3d(features * 4, features * 2, kernel_size=2, stride=(2, 2, 2), bias=True)
+        self.upconv2 = nn.ConvTranspose3d(features * 4, features * 2, kernel_size=(2, 2, 2), stride=(2, 2, 2), bias=True)
         self.decoder2 = UNet3d._block((features * 2) * 2, features * 2, name="dec2")
-        self.upconv1 = nn.ConvTranspose3d(features * 2, features, kernel_size=2, stride=(2, 2, 2), bias=True)
+        self.upconv1 = nn.ConvTranspose3d(features * 2, features, kernel_size=(2, 2, 2), stride=(2, 2, 2), bias=True)
         self.decoder1 = UNet3d._block(features * 2, features, name="dec1")
 
-        self.conv = nn.Conv3d(in_channels=features, out_channels=out_channels, kernel_size=1, padding=0, bias=True)
+        self.conv = nn.Conv3d(in_channels=features, out_channels=out_channels, kernel_size=(1, 1, 1), padding=(0, 0, 0), bias=True)
 
     def forward(self, x):
         enc1 = self.encoder1(x)
@@ -64,9 +64,9 @@ class UNet3d(nn.Module):
                         nn.Conv3d(
                             in_channels=in_channels,
                             out_channels=features,
-                            kernel_size=3,
-                            stride=1,
-                            padding=1,
+                            kernel_size=(3, 3, 3),
+                            stride=(1, 1, 1),
+                            padding=(1, 1, 1),
                             bias=True,
                         ),
                     ),
@@ -77,9 +77,9 @@ class UNet3d(nn.Module):
                         nn.Conv3d(
                             in_channels=features,
                             out_channels=features,
-                            kernel_size=3,
-                            stride=1,
-                            padding=1,
+                            kernel_size=(3, 3, 3),
+                            stride=(1, 1, 1),
+                            padding=(1, 1, 1),
                             bias=True,
                         ),
                     ),
