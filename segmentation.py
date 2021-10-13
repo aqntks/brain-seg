@@ -11,6 +11,7 @@ from monai.transforms import (
     EnsureType,
 )
 
+from utils import cv2gif, show_brain_mri
 from data_loader import brats_brain_val
 
 
@@ -59,27 +60,14 @@ def segmentation():
     with torch.no_grad():
         # select one image to evaluate and visualize the model output
         val_input = val_ds[6]["image"].unsqueeze(0).to(device)
-        image_channel = ['FLAIR', 'T1w', 't1gd', 'T2w']
-        labels = ['edema', 'non-enhancing tumor', 'enhancing tumor']
+
         roi_size = (128, 128, 64)
         sw_batch_size = 4
         val_output = inference(val_input)
         val_output = post_trans(val_output[0])
-        plt.figure("image", (12, 3))
-        for i in range(4):
-            plt.subplot(1, 4, i + 1)
-            plt.title(image_channel[i])
-            plt.imshow(val_ds[6]["image"][i, :, :, 70].detach().cpu(), cmap="gray")
-        plt.figure("label", (12, 6))
-        for i in range(3):
-            plt.subplot(2, 3, i + 1)
-            plt.title(f"label {labels[i]}")
-            plt.imshow(val_ds[6]["label"][i, :, :, 70].detach().cpu())
-        for i in range(3):
-            plt.subplot(2, 3, i + 4)
-            plt.title(f"output {labels[i]}")
-            plt.imshow(val_output[i, :, :, 70].detach().cpu())
-        plt.show()
+
+        # show_brain_mri(val_ds[6], val_output, index=70)
+        cv2gif(val_ds[6]["image"], val_ds[6]["label"], val_output)
 
 
 if __name__ == '__main__':

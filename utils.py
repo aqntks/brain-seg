@@ -1,3 +1,5 @@
+import cv2
+import numpy as np
 import matplotlib.pyplot as plt
 
 
@@ -56,6 +58,54 @@ def train_graph(epoch_loss_values, val_interval, metric_values, metric_values_tc
     y = metric_values_et
     plt.xlabel("epoch")
     plt.plot(x, y, color="purple")
+    plt.show()
+
+
+def cv2gif(image, label, output):
+
+    for i in range(0, image.shape[3]):
+
+        one_size = label[0, :, :, i].detach().cpu().numpy().shape
+
+        concat_image = np.concatenate([image[0, :, :, i].detach().cpu().numpy(),
+                                      image[1, :, :, i].detach().cpu().numpy(),
+                                      image[2, :, :, i].detach().cpu().numpy(),
+                                      image[3, :, :, i].detach().cpu().numpy()], axis=1)
+
+        concat_label = np.concatenate([label[0, :, :, i].detach().cpu().numpy(),
+                                      label[1, :, :, i].detach().cpu().numpy(),
+                                      label[2, :, :, i].detach().cpu().numpy(),
+                                       np.zeros(one_size)], axis=1)
+
+        concat_output = np.concatenate([output[0, :, :, i].detach().cpu().numpy(),
+                                        output[1, :, :, i].detach().cpu().numpy(),
+                                        output[2, :, :, i].detach().cpu().numpy(),
+                                        np.zeros(one_size)], axis=1)
+
+        concat_image = np.concatenate([concat_image, concat_label, concat_output], axis=0)
+
+        cv2.imshow('brain', concat_image)
+        cv2.waitKey(50)
+
+
+def show_brain_mri(val_ds, val_output, index=70):
+    image_channel = ['FLAIR', 'T1w', 't1gd', 'T2w']
+    labels = ['edema', 'non-enhancing tumor', 'enhancing tumor']
+
+    plt.figure("image", (12, 3))
+    for i in range(4):
+        plt.subplot(1, 4, i + 1)
+        plt.title(image_channel[i])
+        plt.imshow(val_ds["image"][i, :, :, index].detach().cpu(), cmap="gray")
+    plt.figure("label", (12, 6))
+    for i in range(3):
+        plt.subplot(2, 3, i + 1)
+        plt.title(f"label {labels[i]}")
+        plt.imshow(val_ds["label"][i, :, :, index].detach().cpu())
+    for i in range(3):
+        plt.subplot(2, 3, i + 4)
+        plt.title(f"output {labels[i]}")
+        plt.imshow(val_output[i, :, :, index].detach().cpu())
     plt.show()
 
 
