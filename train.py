@@ -6,7 +6,7 @@ from monai.data import decollate_batch
 from monai.losses import DiceLoss
 from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric
-from monai.networks.nets import SegResNet
+from monai.networks.nets import SegResNet, UNet
 from monai.transforms import (
     Activations,
     AsDiscrete,
@@ -30,16 +30,24 @@ def train():
 
     # standard PyTorch program style: create SegResNet, DiceLoss and Adam optimizer
     device = torch.device("cuda:0")
-    model = SegResNet(
-        blocks_down=[1, 2, 2, 4],
-        blocks_up=[1, 1, 1],
-        init_filters=16,
-        in_channels=4,
-        out_channels=3,
-        dropout_prob=0.2,
-    ).to(device)
+    # model = SegResNet(
+    #     blocks_down=[1, 2, 2, 4],
+    #     blocks_up=[1, 1, 1],
+    #     init_filters=16,
+    #     in_channels=4,
+    #     out_channels=3,
+    #     dropout_prob=0.2,
+    # ).to(device)
 
     # model = UNet3d(in_channels=4, out_channels=3).to(device)
+
+    model = UNet(
+        spatial_dims=3,
+        in_channels=1,
+        out_channels=1,
+        channels=(4, 8, 16, 32, 64, 128),
+        strides=(2, 2, 2, 2),
+    ).to(device)
 
     loss_function = DiceLoss(smooth_nr=0, smooth_dr=1e-5, squared_pred=True, to_onehot_y=False, sigmoid=True)
     optimizer = torch.optim.Adam(model.parameters(), 1e-4, weight_decay=1e-5)
