@@ -3,7 +3,7 @@ import torch
 
 import matplotlib.pyplot as plt
 from monai.inferers import sliding_window_inference
-from monai.networks.nets import SegResNet
+from monai.networks.nets import SegResNet, Unet
 from monai.transforms import (
     Activations,
     AsDiscrete,
@@ -22,17 +22,25 @@ def segmentation():
     val_ds, val_loader = brats_brain_val('data/')
 
     device = torch.device("cpu")
-    model = SegResNet(
-        blocks_down=[1, 2, 2, 4],
-        blocks_up=[1, 1, 1],
-        init_filters=16,
+    # model = SegResNet(
+    #     blocks_down=[1, 2, 2, 4],
+    #     blocks_up=[1, 1, 1],
+    #     init_filters=16,
+    #     in_channels=4,
+    #     out_channels=3,
+    #     dropout_prob=0.2,
+    # ).to(device)
+
+    model = Unet(
+        spatial_dims=3,
         in_channels=4,
         out_channels=3,
-        dropout_prob=0.2,
+        channels=(16, 32, 64, 128, 256),
+        strides=(2, 2, 2, 2),
     ).to(device)
 
     model.load_state_dict(
-        torch.load(os.path.join('weights/', "SegResNet_sample.pth"), map_location=device)
+        torch.load(os.path.join('weights/', "UNet_sample.pth"), map_location=device)
     )
     model.eval()
 
